@@ -1,0 +1,12 @@
+{
+    "name": "RedBlackTree",
+    "version": "0.1.0",
+    "description": "Red-black tree implementation for Perl 6",
+    "author": "Rob Hoelz",
+    "source-url": "git://github.com/hoelzro/p6-rbtree.git",
+    "test-depends": [ "Test::Generative" ],
+    "provides": {
+        "RedBlackTree": "lib/RedBlackTree.pm"
+    }
+}
+
