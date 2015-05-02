@@ -9,5 +9,13 @@
     "provides": {
         "RedBlackTree": "lib/RedBlackTree.pm"
     }
+    "support": {
+        "email": "rob AT-SIGN hoelz.ro",
+        "bugtracker": "https://github.com/hoelzro/p6-rbtree/issues",
+    },
+    "license": "http://opensource.org/licenses/MIT",
+    "tags": [
+        "data structure"
+    ]
 }
 
