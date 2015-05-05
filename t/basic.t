@@ -5,7 +5,7 @@ use v6;
 use Test;
 use RedBlackTree;
 
-#plan 1;
+plan 2;
 
 {
     my @keys      = 6, 69, 65, 55, 89, 16, 51, 9, 27, 14;
@@ -14,7 +14,7 @@ use RedBlackTree;
         my $t = RedBlackTree.new;
 
         my $*RB_DEBUG = False;
-        for @keys[0..9] -> $k {
+        for @keys -> $k {
             $t.insert($k, $k * $k);
         }
 
@@ -22,11 +22,33 @@ use RedBlackTree;
             take $k;
         }
     };
-    say @sorted.join(' ');
-    say @tree-wise.join(' ');
 
-    #is_deeply @sorted, @tree-wise;
+    is_deeply @sorted, @tree-wise;
+}
+
+{
+    my @keys      = 6, 69, 65, 55, 89, 16, 51, 9, 27, 14;
+    my @sorted    = @keys.sort;
+    my @tree-wise = do gather {
+        my $t = RedBlackTree.new;
+
+        my $*RB_DEBUG = False;
+        for @keys -> $k {
+            $t.insert($k, $k * $k);
+        }
+
+        for @keys[0, 2, 4...*] -> $k {
+            $t.delete($k);
+        }
+
+        for $t.keys -> $k {
+            take $k;
+        }
+    };
+
+    is_deeply @sorted[1,3,5...*], @tree-wise;
 }
 
 # XXX removal
 # XXX key cursor
+# XXX duplicates (if we allow them, what about removing them?)
