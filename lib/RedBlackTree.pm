@@ -21,6 +21,12 @@ my class RBNode {
     method redden  { $!color = RBColor::Red   }
 }
 
+my $*RB_DEBUG = False;
+
+my sub debug($msg) {
+    say $msg if $*RB_DEBUG;
+}
+
 class RedBlackTree {
     has RBNode $!root;
     has &!cmp;
@@ -84,7 +90,7 @@ class RedBlackTree {
             my $num-black-nodes;
             my $ok = True;
             for self!paths($!root) -> $path {
-                say $path.grep(*.is-black).map(*.key).join(' ') if $*RB_DEBUG;
+                debug $path.grep(*.is-black).map(*.key).join(' ');
                 my $black-count = $path.grep({ $^n.is-black }).elems;
 
                 $num-black-nodes = $black-count unless $num-black-nodes.defined;
@@ -165,7 +171,7 @@ class RedBlackTree {
             my $parent = $node.parent;
 
             if !$parent {
-                say "insert case #1" if $*RB_DEBUG;
+                debug "insert case #1";
                 $node.blacken;
             } else {
                 insert-case2($node);
@@ -176,7 +182,7 @@ class RedBlackTree {
             my $parent = $node.parent;
 
             if $parent.is-black {
-                say "insert case #2" if $*RB_DEBUG;
+                debug "insert case #2";
                 return;
             } else {
                 insert-case3($node);
@@ -187,7 +193,7 @@ class RedBlackTree {
             my $uncle = uncle($node);
 
             if $uncle.is-red {
-                say "insert case #3" if $*RB_DEBUG;
+                debug "insert case #3";
                 $node.parent.blacken;
                 $uncle.blacken;
                 my $g = grandparent($node);
@@ -202,11 +208,11 @@ class RedBlackTree {
             my $g = grandparent($node);
 
             if $node === $node.parent.right && $node.parent === $g.left {
-                say "insert case #4.1" if $*RB_DEBUG;
+                debug "insert case #4.1";
                 rotate-left($node.parent);
                 $node .= left;
             } elsif $node === $node.parent.left && $node.parent === $g.right {
-                say "insert case #4.2" if $*RB_DEBUG;
+                debug "insert case #4.2";
                 rotate-right($node.parent);
                 $node .= right;
             }
@@ -231,8 +237,8 @@ class RedBlackTree {
         my sub insert-helper(RBNode $parent is rw, RBNode $node) {
             if !$parent.defined {
                 $parent = $node;
-                say 'insert:' if $*RB_DEBUG;
-                say self.dump if $*RB_DEBUG;
+                debug 'insert:';
+                debug self.dump;
             } else {
                 $node.parent = $parent; # XXX lots of redundant writing here
                 if &!cmp($node.key, $parent.key) {
@@ -247,8 +253,8 @@ class RedBlackTree {
             }
         }
 
-        say 'before:' if $*RB_DEBUG;
-        say self.dump if $*RB_DEBUG;
+        debug 'before:';
+        debug self.dump;
         if $!root {
             insert-helper($!root, RBNode.new(
                 :$key,
@@ -261,8 +267,8 @@ class RedBlackTree {
                 :color(RBColor::Black),
             );
         }
-        say 'after:'  if $*RB_DEBUG;
-        say self.dump if $*RB_DEBUG;
+        debug 'after:';
+        debug self.dump;
     }
 
     method dump {
