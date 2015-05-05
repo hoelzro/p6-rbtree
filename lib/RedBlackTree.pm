@@ -269,6 +269,105 @@ class RedBlackTree {
         debug self.dump;
     }
 
+    method !find-node($key) returns RBNode {
+        my $current = $!root;
+
+        while $current {
+            my $comparison = &!cmp($key, $current.key);
+
+            if $comparison < 0 {
+                $current .= left;
+            } elsif $comparison > 0 {
+                $current .= right;
+            } else {
+                return $current;
+            }
+        }
+    }
+
+    method !get-cont(RBNode $node) is rw {
+        my $parent = $node.parent;
+
+        if $parent {
+            $node === $parent.left ?? $parent.left !! $parent.right
+        } else {
+            $!root
+        }
+    }
+
+    method delete($key) {
+        # condition 1 (a node is either red or black) is satisified by
+        # the type system
+
+        POST {
+            $!root.is-black
+        }
+
+        # condition 3 (all leaves are black) is satisified by the type
+        # system (all undefined RBNodes are black)
+
+        POST {
+            # all red nodes have two black children
+            self!check-nodes({
+                $^node.is-black || ($^node.left.is-black && $^node.right.is-black)
+            })
+        }
+
+        POST {
+            # every path from a node to a leaf must contain
+            # the same number of black nodes
+            my $num-black-nodes;
+            my $ok = True;
+            for self!paths($!root) -> $path {
+                debug $path.grep(*.is-black).map(*.key).join(' ');
+                my $black-count = $path.grep({ $^n.is-black }).elems;
+
+                $num-black-nodes = $black-count unless $num-black-nodes.defined;
+                unless $num-black-nodes == $black-count {
+                    say "oh shit: $num-black-nodes vs $black-count";
+                    $ok = False;
+                    last;
+                }
+            }
+            $ok
+        }
+
+        my RBNode $node = self!find-node($key);
+
+        return unless $node;
+
+        if $node.left && $node.right {
+            my $max-left-descendant = self!find-max-node($node.left);
+
+            $node.key   = $max-left-descendant.key;
+            $node.value = $max-left-descendant.value;
+
+            # XXX need to properly delete the node now
+        } elsif $node.left || $node.right {
+            my RBNode $node_cont := self!get-cont($node);
+
+            if $node.is-red {
+                # due to property 5, we know this node has no
+                # non-leaf children, so we don't need to mess with
+                # them or update a parent
+
+                $node_cont = RBNode;
+                return;
+            }
+
+            my RBNode $parent = $node.parent;
+            my RBNode $non-leaf-child = $node.left || $node.right; # XXX not always non-leaf...
+
+            if $non-leaf-child.is-red {
+                $node_cont = $non-leaf-child;
+                $non-leaf-child.parent = $parent;
+                $non-leaf-child.blacken;
+            } else {
+            }
+        } else {
+        }
+    }
+
     method dump {
         my sub dump-node(RBNode $node, $indent) returns Str {
             return ' ' x $indent ~ "(nil)\n" if !$node.defined;
