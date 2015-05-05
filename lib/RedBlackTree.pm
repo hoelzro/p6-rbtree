@@ -69,7 +69,6 @@ class RedBlackTree {
         # condition 1 (a node is either red or black) is satisified by
         # the type system
 
-        #`(
         POST {
             $!root.is-black
         }
@@ -102,7 +101,6 @@ class RedBlackTree {
             }
             $ok
         }
-        )
 
         my sub rotate-left(RBNode $node) {
             die "no right child for left rotation" unless $node.right;
