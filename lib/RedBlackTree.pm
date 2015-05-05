@@ -31,7 +31,7 @@ class RedBlackTree {
     has RBNode $!root;
     has &!cmp;
 
-    submethod BUILD(:&!cmp = &[before]) {}
+    submethod BUILD(:&!cmp = &[cmp]) {}
 
     method !check-nodes(&predicate) {
         my sub helper(RBNode $node) {
@@ -239,7 +239,7 @@ class RedBlackTree {
                 debug self.dump;
             } else {
                 $node.parent = $parent; # XXX lots of redundant writing here
-                if &!cmp($node.key, $parent.key) {
+                if &!cmp($node.key, $parent.key) < 0 {
                     insert-helper($parent.left, $node);
                 } else {
                     insert-helper($parent.right, $node);
