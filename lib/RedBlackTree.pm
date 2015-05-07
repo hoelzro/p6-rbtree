@@ -58,24 +58,6 @@ class RedBlackTree {
         }
     }
 
-    method !paths($node) {
-        my sub helper($node, @current-path is copy) {
-            unless $node {
-                take @current-path.item;
-                return;
-            }
-
-            my @new-path = @current-path, $node;
-
-            helper($node.left,  @new-path);
-            helper($node.right, @new-path);
-        }
-
-        gather {
-            helper($!root, []);
-        }
-    }
-
     my sub rotate-left(RBNode $node) {
         die "no right child for left rotation" unless $node.right;
 
