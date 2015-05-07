@@ -217,6 +217,8 @@ class RedBlackTree {
     }
 
     submethod POST {
+        return True unless $*RB-CHECK-INVARIANTS;
+
         # condition 1 (a node is either red or black) is satisified by
         # the type system
 

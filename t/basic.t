@@ -7,6 +7,8 @@ use RedBlackTree;
 
 plan 2;
 
+my $*RB-CHECK-INVARIANTS = True;
+
 {
     my @keys      = 6, 69, 65, 55, 89, 16, 51, 9, 27, 14;
     my @sorted    = @keys.sort;
