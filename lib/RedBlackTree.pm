@@ -166,6 +166,116 @@ class RedBlackTree {
         ));
     }
 
+    method !find-max-node(RBNode $node is copy) {
+        while $node.right {
+            $node .= right;
+        }
+        return $node;
+    }
+
+    method !delete-helper(RBNode $node is copy, $key) {
+        unless $node {
+            return $node, RBNode;
+        }
+
+        my Bool $check-me;
+
+        my ( $child, $sibling, $is-left ) =
+            do given &!cmp($key, $node.key) {
+                when Order::Same {
+                    if $node.left && $node.right {
+                        # XXX I wish I could avoid the redundant traversal here
+                        my $max                   = self!find-max-node($node.left);
+                        $node.key                 = $max.key;
+                        $node.value               = $max.value;
+                        ( $node.left, $check-me ) = self!delete-helper($node.left, $max.key);
+                        $node.left, $node.right, True
+                    } else {
+                        # XXX sanity check
+                        my $child = $node.left // $node.right;
+                        if $node.is-black {
+                            if $child.is-red {
+                                $child.blacken;
+                                return $child, False;
+                            } else {
+                                return $child, True;
+                            }
+                        } else {
+                            return $child, False;
+                        }
+                    }
+                }
+
+                when Order::Less {
+                    ( $node.left, $check-me ) = self!delete-helper($node.left, $key);
+                    $node.left, $node.right, True
+                }
+
+                when Order::More {
+                    ( $node.right, $check-me ) = self!delete-helper($node.right, $key);
+                    $node.right, $node.left, False
+                }
+            }
+
+        return $node, $check-me unless $check-me;
+
+        if $sibling.is-red {
+            $sibling.blacken;
+            $node.blacken;
+
+            if $is-left {
+                $sibling .= right;
+                $node = rotate-left($node);
+            } else {
+                $sibling .= left;
+                $node = rotate-right($node);
+            }
+        }
+
+        if all($sibling, $sibling.left, $sibling.right).is-black {
+            if $node.is-black {
+                $sibling.redden;
+                return $node, True;
+            } else {
+                $sibling.redden;
+                $node.blacken;
+                return $node, False;
+            }
+        }
+
+        if $sibling.is-black && $sibling.left.is-red && $sibling.right.is-black && $is-left {
+            $sibling.redden;
+            $sibling.left.blacken;
+            $node.right = rotate-right($sibling);
+            $sibling    = $node.right;
+        } elsif $sibling.is-black && $sibling.right.is-red && $sibling.left.is-black && !$is-left {
+            $sibling.redden;
+            $sibling.right.blacken;
+            $node.left = rotate-left($sibling);
+            $sibling   = $node.left;
+        }
+
+        if $sibling.is-black && $sibling.right.is-red && $is-left {
+            $sibling.color = $node.color;
+            $sibling.right.blacken;
+            $node.blacken;
+            $node = rotate-left($node);
+        } elsif $sibling.is-black && $sibling.left.is-red && !$is-left {
+            $sibling.color = $node.color;
+            $sibling.left.blacken;
+            $node.blacken;
+            $node = rotate-right($node);
+        }
+
+        return $node, False;
+    }
+
+    method delete($key) {
+        POST { self.POST }
+
+        ($!root, $) = self!delete-helper($!root, $key)
+    }
+
     method dump {
         my multi color(RBNode $node where *.is-black, Str $s) {
             "\e[37;40;1m$s\e[0m"
