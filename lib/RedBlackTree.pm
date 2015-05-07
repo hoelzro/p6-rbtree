@@ -216,6 +216,18 @@ class RedBlackTree {
         }
     }
 
+    method !count-black-nodes(RBNode $node) {
+        return 1 unless $node;
+
+        my $left-count  = self!count-black-nodes($node.left);
+        my $right-count = self!count-black-nodes($node.right);
+
+        return unless $left-count.defined && $right-count.defined;
+        return unless $left-count == $right-count;
+
+        return ($node.is-black ?? 1 !! 0) + $left-count;
+    }
+
     submethod POST {
         return True unless $*RB-CHECK-INVARIANTS;
 
@@ -237,19 +249,9 @@ class RedBlackTree {
             RedBlackTreeInvariantViolation.new(:message(q{All red nodes' children must be black})).throw;
         }
 
-        my $num-black-nodes;
-        my $ok = True;
-        for self!paths($!root) -> $path {
-            my $black-count = $path.grep({ $^n.is-black }).elems;
+        my $black-node-count = self!count-black-nodes($!root);
 
-            $num-black-nodes = $black-count unless $num-black-nodes.defined;
-            unless $num-black-nodes == $black-count {
-                $ok = False;
-                last;
-            }
-        }
-
-        unless $ok {
+        unless $black-node-count.defined {
             RedBlackTreeInvariantViolation.new(:message('All paths from a node to a leaf must contain the same number of black nodes')).throw;
         }
 
