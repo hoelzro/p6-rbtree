@@ -7,6 +7,7 @@
     "source-url": "git://github.com/hoelzro/p6-rbtree.git",
     "test-depends": [ "Test::Generative" ],
     "provides": {
+        "RedBlackTreeInvariantViolation": "lib/RedBlackTree.pm"
         "RedBlackTree": "lib/RedBlackTree.pm"
     }
     "support": {
