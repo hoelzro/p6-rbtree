@@ -40,10 +40,13 @@ class RedBlackTreeInvariantViolation is X::Phaser::PrePost {
     has $.message;
 }
 
+#| A red-black tree implementation.
 class RedBlackTree {
     has RBNode $!root;
     has &!cmp;
 
+    #| Constructor for this class; you can provide a custom
+    #| comparator via :cmp, via defaults to C<cmp>.
     submethod BUILD(:&!cmp = &[cmp]) {}
 
     method !check-nodes(&predicate) {
@@ -157,6 +160,8 @@ class RedBlackTree {
         return $node, $check-me;
     }
 
+    #| Inserts a key-value pair into the tree.  If an existing pair
+    #| with the same key is found, its value is updated to the given value.
     method insert($key, $value) {
         POST {
             self.POST;
@@ -272,12 +277,15 @@ class RedBlackTree {
         return $node, False;
     }
 
+    #| Removes a key-value pair from the tree.  If no pair with the given
+    #| key is found, it's a no-op.
     method delete($key) {
         POST { self.POST }
 
         ($!root, $) = self!delete-helper($!root, $key)
     }
 
+    # Dumps the tree into a Str, mainly for debugging purposes.
     method dump {
         my multi color(RBNode $node where *.is-black, Str $s) {
             "\e[37;40;1m$s\e[0m"
@@ -297,6 +305,7 @@ class RedBlackTree {
         dump-node($!root, 0);
     }
 
+    #| Iterates over the keys in the tree, increasing order.
     method keys {
         my sub helper(RBNode $node) {
             return unless $node;
@@ -322,6 +331,7 @@ class RedBlackTree {
         return ($node.is-black ?? 1 !! 0) + $left-count;
     }
 
+    # Checks invariants
     submethod POST {
         return True unless $*RB-CHECK-INVARIANTS;
 
