@@ -18,6 +18,14 @@ my class RBNode {
 
     method blacken { $!color = RBColor::Black }
     method redden  { $!color = RBColor::Red   }
+
+    multi method gist(RBNode:U) {
+        'RBNode'
+    }
+
+    multi method gist(RBNode:D:) {
+        "RBNode(key => $!key.gist(), value => $!value.gist(), color => $!color.gist(), left => {$!left ?? ~$!left !! '(RBNode)'}, right => {$!right ?? ~$!right !! '(RBNode)'})"
+    }
 }
 
 my $*RB_DEBUG = False;
