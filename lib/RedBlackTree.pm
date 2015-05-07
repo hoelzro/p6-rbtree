@@ -212,10 +212,16 @@ class RedBlackTree {
     }
 
     method dump {
+        my multi color(RBNode $node where *.is-black, Str $s) {
+            "\e[37;40;1m$s\e[0m"
+        }
+        my multi color(RBNode $node where *.is-red, Str $s) {
+            "\e[30;41;1m$s\e[0m";
+        }
         my sub dump-node(RBNode $node, $indent) returns Str {
-            return ' ' x $indent ~ "(nil)\n" if !$node.defined;
+            return ' ' x $indent ~ color($node, "(nil)") ~ "\n" if !$node.defined;
 
-            my $dump = ' ' x $indent ~ "$node.key() $node.value() ($node.color())\n";
+            my $dump = ' ' x $indent ~ color($node, "$node.key() $node.value()") ~ "\n";
             $dump ~= dump-node($node.left, $indent + 1);
             $dump ~= dump-node($node.right, $indent + 1);
             $dump
