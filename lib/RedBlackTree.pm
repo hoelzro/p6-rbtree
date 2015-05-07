@@ -1,5 +1,7 @@
 use v6;
 
+constant $VERSION = '0.01';
+
 my enum RBColor <Black Red>;
 my class RBNode {
     has $.key is rw;
@@ -350,3 +352,42 @@ class RedBlackTree {
         True
     }
 }
+
+=begin NAME
+RedBlackTree
+=end NAME
+
+=begin VERSION
+A<$VERSION>
+=end VERSION
+
+=begin SYNOPSIS
+    use RedBlackTree;
+
+    my $tree = RedBlackTree.new;
+    $tree.insert('foo', 17);
+    $tree.insert('bar', 18);
+    $tree.insert('baz', 19);
+
+    my @keys = gather for $tree.keys { take $_ };
+=end SYNOPSIS
+
+=begin DESCRIPTION
+This module implements a red-black tree data structure where
+each node has a key and value.
+Its intended use is for helping to implement associative containers
+with ordered keys for things like range queries, but it's still
+very young.
+=end DESCRIPTION
+
+=head1 INVARIANTS
+=begin pod
+Red-black trees have a set of properties that must always hold true, but they
+can take some time to check on large trees.  If you want the code to check them
+(for debugging or testing purposes, usualy), you can set C<$*RB-CHECK-INVARIANTS>
+to a truthy value.
+=end pod
+
+=begin AUTHOR
+Rob Hoelz <rob AT-SIGN hoelz.ro>
+=end AUTHOR
