@@ -8,7 +8,6 @@ my class RBNode {
 
     has RBNode $.left is rw;
     has RBNode $.right is rw;
-    has RBNode $.parent is rw; # XXX temporary
 
     submethod BUILD(:$!key!, :$!value!, :$!color = RBColor::Red) {}
 
@@ -65,6 +64,103 @@ class RedBlackTree {
         }
     }
 
+    my sub rotate-left(RBNode $node) {
+        die "no right child for left rotation" unless $node.right;
+
+        my $new-node = $node.right;
+
+        $node.right    = $new-node.left;
+        $new-node.left = $node;
+
+        $new-node
+    }
+
+    my sub rotate-right(RBNode $node) {
+        die "no left child for right rotation" unless $node.left;
+
+        my $new-node = $node.left;
+
+        $node.left      = $new-node.right;
+        $new-node.right = $node;
+
+        $new-node
+    }
+
+    method !insert-helper(RBNode $current is copy, RBNode $parent, RBNode $grandparent, RBNode $uncle, RBNode $insert-me) {
+        my ( $node, $check-me ) = do if $current {
+            my $sibling = $parent ?? ($current === $parent.left ?? $parent.right !! $parent.left) !! RBNode;
+            my $check-me;
+            my $child = do given &!cmp($insert-me.key, $current.key) {
+                when Order::Same {
+                    # XXX we may allow an :$overwrite option in the future
+                    $current.value = $insert-me.value;
+                    return $current, RBNode;
+                }
+
+                when Order::Less {
+                    ($current.left, $check-me) = self!insert-helper($current.left, $current, $parent, $sibling, $insert-me);
+                    $current.left
+                }
+
+                when Order::More {
+                    ($current.right, $check-me) = self!insert-helper($current.right, $current, $parent, $sibling, $insert-me);
+                    $current.right
+                }
+            }
+
+            return $current unless $check-me;
+
+            if $check-me === $child && $parent {
+                if $current.is-red && $sibling.is-black {
+                    if $child === $current.right && $current === $parent.left {
+                        return rotate-left($current), $current;
+                    } elsif $child === $current.left && $current === $parent.right {
+                        return rotate-right($current), $current;
+                    }
+                }
+            }
+
+            if $check-me === ($child.left|$child.right) {
+                my $other-child = $child === $current.left ?? $current.right !! $current.left;
+
+                if $child.is-red && $other-child.is-black {
+                    if $child === $current.left && $child.left.is-red {
+                        $child.blacken;
+                        $current.redden;
+                        $current = rotate-right($current);
+                    } elsif $child === $current.right && $child.right.is-red {
+                        $child.blacken;
+                        $current.redden;
+                        $current = rotate-left($current);
+                    }
+                }
+            }
+
+            $current, $check-me
+        } else {
+            $insert-me, $insert-me
+        }
+
+        if $check-me === $node {
+            if $parent {
+                if $parent.is-red {
+                    if $uncle.is-red {
+                        $parent.blacken;
+                        $uncle.blacken;
+                        $grandparent.redden;
+                        return $node, $grandparent;
+                    }
+                } else {
+                    return $node, RBNode;
+                }
+            } else {
+                $node.blacken;
+                return $node, RBNode;
+            }
+        }
+        return $node, $check-me;
+    }
+
     method insert($key, $value) {
         # condition 1 (a node is either red or black) is satisified by
         # the type system
@@ -102,270 +198,10 @@ class RedBlackTree {
             $ok
         }
 
-        my sub rotate-left(RBNode $node) {
-            die "no right child for left rotation" unless $node.right;
-
-            my $parent = $node.parent;
-
-            my $node_cont;
-
-            if $parent {
-                $node_cont := $node === $parent.left ?? $parent.left !! $parent.right;
-            } else {
-                $node_cont := $!root;
-            }
-
-            $node_cont         = $node.right;
-            $node_cont.parent  = $parent;
-
-            $node.right        = $node_cont.left;
-            $node.right.parent = $node if $node.right;
-
-            $node_cont.left    = $node;
-            $node.parent       = $node_cont;
-        }
-
-        my sub rotate-right(RBNode $node) {
-            die "no left child for right rotation" unless $node.left;
-
-            my $parent = $node.parent;
-
-            my $node_cont;
-
-            if $parent {
-                $node_cont := $node === $parent.left ?? $parent.left !! $parent.right;
-            } else {
-                $node_cont := $!root;
-            }
-
-            $node_cont        = $node.left;
-            $node_cont.parent = $parent;
-
-            $node.left        = $node_cont.right;
-            $node.left.parent = $node if $node.left;
-
-            $node_cont.right = $node;
-            $node.parent     = $node_cont;
-        }
-
-        my sub grandparent(RBNode $node) returns RBNode {
-            my $parent = $node.parent;
-
-            $parent ?? $parent.parent !! RBNode
-        }
-
-        my sub uncle(RBNode $node) returns RBNode {
-            my $g      = grandparent($node);
-            my $parent = $node.parent;
-
-            if $g {
-                $parent === $g.left ?? $g.right !! $g.left
-            } else {
-                RBNode
-            }
-        }
-
-        my sub insert-case1(RBNode $node) {
-            my $parent = $node.parent;
-
-            if !$parent {
-                debug "insert case #1";
-                $node.blacken;
-            } else {
-                insert-case2($node);
-            }
-        }
-
-        my sub insert-case2(RBNode $node) {
-            my $parent = $node.parent;
-
-            if $parent.is-black {
-                debug "insert case #2";
-                return;
-            } else {
-                insert-case3($node);
-            }
-        }
-
-        my sub insert-case3(RBNode $node) {
-            my $uncle = uncle($node);
-
-            if $uncle.is-red {
-                debug "insert case #3";
-                $node.parent.blacken;
-                $uncle.blacken;
-                my $g = grandparent($node);
-                $g.redden;
-                insert-case1($g);
-            } else {
-                insert-case4($node);
-            }
-        }
-
-        my sub insert-case4(RBNode $node is copy) {
-            my $g = grandparent($node);
-
-            if $node === $node.parent.right && $node.parent === $g.left {
-                debug "insert case #4.1";
-                rotate-left($node.parent);
-                $node .= left;
-            } elsif $node === $node.parent.left && $node.parent === $g.right {
-                debug "insert case #4.2";
-                rotate-right($node.parent);
-                $node .= right;
-            }
-            insert-case5($node);
-        }
-
-        my sub insert-case5(RBNode $node) {
-            my $g = grandparent($node);
-
-            $node.parent.blacken;
-            #say $node.key;
-            #say self.dump;
-            $g.redden;
-
-            if $node === $node.parent.left {
-                rotate-right($g);
-            } else {
-                rotate-left($g);
-            }
-        }
-
-        my sub insert-helper(RBNode $parent is rw, RBNode $node) {
-            if !$parent.defined {
-                $parent = $node;
-                debug 'insert:';
-                debug self.dump;
-            } else {
-                $node.parent = $parent; # XXX lots of redundant writing here
-                if &!cmp($node.key, $parent.key) < 0 {
-                    insert-helper($parent.left, $node);
-                } else {
-                    insert-helper($parent.right, $node);
-                }
-
-                if $node.parent === $parent {
-                    insert-case1($node);
-                }
-            }
-        }
-
-        debug 'before:';
-        debug self.dump;
-        if $!root {
-            insert-helper($!root, RBNode.new(
-                :$key,
-                :$value,
-            ));
-        } else {
-            $!root = RBNode.new(
-                :$key,
-                :$value,
-                :color(RBColor::Black),
-            );
-        }
-        debug 'after:';
-        debug self.dump;
-    }
-
-    method !find-node($key) returns RBNode {
-        my $current = $!root;
-
-        while $current {
-            my $comparison = &!cmp($key, $current.key);
-
-            if $comparison < 0 {
-                $current .= left;
-            } elsif $comparison > 0 {
-                $current .= right;
-            } else {
-                return $current;
-            }
-        }
-    }
-
-    method !get-cont(RBNode $node) is rw {
-        my $parent = $node.parent;
-
-        if $parent {
-            $node === $parent.left ?? $parent.left !! $parent.right
-        } else {
-            $!root
-        }
-    }
-
-    method delete($key) {
-        # condition 1 (a node is either red or black) is satisified by
-        # the type system
-
-        POST {
-            $!root.is-black
-        }
-
-        # condition 3 (all leaves are black) is satisified by the type
-        # system (all undefined RBNodes are black)
-
-        POST {
-            # all red nodes have two black children
-            self!check-nodes({
-                $^node.is-black || ($^node.left.is-black && $^node.right.is-black)
-            })
-        }
-
-        POST {
-            # every path from a node to a leaf must contain
-            # the same number of black nodes
-            my $num-black-nodes;
-            my $ok = True;
-            for self!paths($!root) -> $path {
-                debug $path.grep(*.is-black).map(*.key).join(' ');
-                my $black-count = $path.grep({ $^n.is-black }).elems;
-
-                $num-black-nodes = $black-count unless $num-black-nodes.defined;
-                unless $num-black-nodes == $black-count {
-                    say "oh shit: $num-black-nodes vs $black-count";
-                    $ok = False;
-                    last;
-                }
-            }
-            $ok
-        }
-
-        my RBNode $node = self!find-node($key);
-
-        return unless $node;
-
-        if $node.left && $node.right {
-            my $max-left-descendant = self!find-max-node($node.left);
-
-            $node.key   = $max-left-descendant.key;
-            $node.value = $max-left-descendant.value;
-
-            # XXX need to properly delete the node now
-        } elsif $node.left || $node.right {
-            my RBNode $node_cont := self!get-cont($node);
-
-            if $node.is-red {
-                # due to property 5, we know this node has no
-                # non-leaf children, so we don't need to mess with
-                # them or update a parent
-
-                $node_cont = RBNode;
-                return;
-            }
-
-            my RBNode $parent = $node.parent;
-            my RBNode $non-leaf-child = $node.left || $node.right; # XXX not always non-leaf...
-
-            if $non-leaf-child.is-red {
-                $node_cont = $non-leaf-child;
-                $non-leaf-child.parent = $parent;
-                $non-leaf-child.blacken;
-            } else {
-            }
-        } else {
-        }
+        ( $!root, $ ) = self!insert-helper($!root, RBNode, RBNode, RBNode, RBNode.new(
+            :$key,
+            :$value,
+        ));
     }
 
     method dump {
