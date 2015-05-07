@@ -193,7 +193,6 @@ class RedBlackTree {
             my $num-black-nodes;
             my $ok = True;
             for self!paths($!root) -> $path {
-                debug $path.grep(*.is-black).map(*.key).join(' ');
                 my $black-count = $path.grep({ $^n.is-black }).elems;
 
                 $num-black-nodes = $black-count unless $num-black-nodes.defined;
