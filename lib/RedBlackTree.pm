@@ -2,7 +2,7 @@ use v6;
 
 my enum RBColor <Black Red>;
 my class RBNode {
-    has $.key;
+    has $.key is rw;
     has $.value is rw;
     has RBColor $!color;
 
