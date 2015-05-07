@@ -30,7 +30,7 @@ my $*RB-CHECK-INVARIANTS = True;
 
 {
     my @keys      = 6, 69, 65, 55, 89, 16, 51, 9, 27, 14;
-    my @sorted    = @keys.sort;
+    my @sorted    = @keys[1,3,5...*].sort;
     my @tree-wise = do gather {
         my $t = RedBlackTree.new;
 
@@ -48,9 +48,11 @@ my $*RB-CHECK-INVARIANTS = True;
         }
     };
 
-    is_deeply @sorted[1,3,5...*], @tree-wise;
+    is_deeply @sorted, @tree-wise;
 }
 
 # XXX removal
 # XXX key cursor
 # XXX duplicates (if we allow them, what about removing them?)
+# XXX remove a non-existent key
+# XXX remove from an empty tree
