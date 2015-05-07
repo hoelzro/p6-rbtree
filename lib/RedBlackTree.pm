@@ -34,6 +34,10 @@ my sub debug($msg) {
     say $msg if $*RB_DEBUG;
 }
 
+class RedBlackTreeInvariantViolation is X::Phaser::PrePost {
+    has $.message;
+}
+
 class RedBlackTree {
     has RBNode $!root;
     has &!cmp;
@@ -170,39 +174,8 @@ class RedBlackTree {
     }
 
     method insert($key, $value) {
-        # condition 1 (a node is either red or black) is satisified by
-        # the type system
-
         POST {
-            $!root.is-black
-        }
-
-        # condition 3 (all leaves are black) is satisified by the type
-        # system (all undefined RBNodes are black)
-
-        POST {
-            # all red nodes have two black children
-            self!check-nodes({
-                $^node.is-black || ($^node.left.is-black && $^node.right.is-black)
-            })
-        }
-
-        POST {
-            # every path from a node to a leaf must contain
-            # the same number of black nodes
-            my $num-black-nodes;
-            my $ok = True;
-            for self!paths($!root) -> $path {
-                my $black-count = $path.grep({ $^n.is-black }).elems;
-
-                $num-black-nodes = $black-count unless $num-black-nodes.defined;
-                unless $num-black-nodes == $black-count {
-                    say "oh shit: $num-black-nodes vs $black-count";
-                    $ok = False;
-                    last;
-                }
-            }
-            $ok
+            self.POST;
         }
 
         ( $!root, $ ) = self!insert-helper($!root, RBNode, RBNode, RBNode, RBNode.new(
@@ -241,5 +214,43 @@ class RedBlackTree {
         gather {
             helper($!root);
         }
+    }
+
+    submethod POST {
+        # condition 1 (a node is either red or black) is satisified by
+        # the type system
+
+        unless $!root.is-black {
+            RedBlackTreeInvariantViolation.new(:message('Root must be black')).throw;
+        }
+
+        # condition 3 (all leaves are black) is satisified by the type
+        # system (all undefined RBNodes are black)
+
+        my $all-red-children-black = self!check-nodes({
+            $^node.is-black || ($^node.left.is-black && $^node.right.is-black)
+        });
+
+        unless $all-red-children-black {
+            RedBlackTreeInvariantViolation.new(:message(q{All red nodes' children must be black})).throw;
+        }
+
+        my $num-black-nodes;
+        my $ok = True;
+        for self!paths($!root) -> $path {
+            my $black-count = $path.grep({ $^n.is-black }).elems;
+
+            $num-black-nodes = $black-count unless $num-black-nodes.defined;
+            unless $num-black-nodes == $black-count {
+                $ok = False;
+                last;
+            }
+        }
+
+        unless $ok {
+            RedBlackTreeInvariantViolation.new(:message('All paths from a node to a leaf must contain the same number of black nodes')).throw;
+        }
+
+        True
     }
 }
