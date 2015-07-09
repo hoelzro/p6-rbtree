@@ -5,7 +5,7 @@
     "description": "Red-black tree implementation for Perl 6",
     "author": "Rob Hoelz",
     "source-url": "git://github.com/hoelzro/p6-rbtree.git",
-    "test-depends": [ "Test::Generative" ],
+    "test-depends": [],
     "provides": {
         "RedBlackTreeInvariantViolation": "lib/RedBlackTree.pm"
         "RedBlackTree": "lib/RedBlackTree.pm"
