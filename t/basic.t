@@ -25,7 +25,7 @@ my $*RB-CHECK-INVARIANTS = True;
         }
     };
 
-    is_deeply @sorted, @tree-wise;
+    is-deeply @sorted, @tree-wise;
 }
 
 {
@@ -48,7 +48,7 @@ my $*RB-CHECK-INVARIANTS = True;
         }
     };
 
-    is_deeply @sorted, @tree-wise;
+    is-deeply @sorted, @tree-wise;
 }
 
 # XXX removal
